@@ -122,6 +122,10 @@ process.on('SIGINT', () => {
 });
 
 // Start the server
-startServer();
+if (require.main === module) {
+  // Only start server if this file is run directly (not required as module)
+  startServer();
+}
 
-module.exports = { app, server, io };
+// Export the app as default for deployment platforms
+module.exports = app;

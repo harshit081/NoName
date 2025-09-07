@@ -63,9 +63,7 @@ const userSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Index for better query performance
-userSchema.index({ username: 1 });
-userSchema.index({ email: 1 });
+// Index for better query performance (username and email already have unique indexes)
 userSchema.index({ isOnline: 1 });
 userSchema.index({ isGuest: 1 });
 userSchema.index({ guestExpiry: 1 });
