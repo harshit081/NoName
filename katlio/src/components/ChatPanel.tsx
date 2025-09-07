@@ -52,6 +52,20 @@ export default function ChatPanel({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/';
+
+  // Helper function to get full image URL
+  const getImageUrl = (fileUrl: string) => {
+    if (fileUrl.startsWith('http')) {
+      return fileUrl; // Already a full URL
+    }
+    // Construct the backend base URL for static files
+    const backendBase = 'http://localhost:5000';
+    // Ensure fileUrl starts with / for proper URL construction
+    const cleanFileUrl = fileUrl.startsWith('/') ? fileUrl : `/${fileUrl}`;
+    return `${backendBase}${cleanFileUrl}`;
+  };
+
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
@@ -97,8 +111,6 @@ export default function ChatPanel({
     }
   };
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/';
-
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -107,7 +119,7 @@ export default function ChatPanel({
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch(`${API_URL}api/upload`, {
+      const response = await fetch(`${BACKEND_URL}api/upload`, {
         method: 'POST',
         body: formData,
       });
@@ -115,7 +127,8 @@ export default function ChatPanel({
       if (response.ok) {
         const { fileUrl, filename } = await response.json();
         const fileType = file.type.startsWith('image/') ? 'image' : 'file';
-        onSendMessage(filename, fileType, `${API_URL}${fileUrl}`);
+        // Send the relative fileUrl, it will be converted to full URL when displaying
+        onSendMessage(filename, fileType, fileUrl);
       }
     } catch (error) {
       console.error('Error uploading file:', error);
@@ -190,7 +203,7 @@ export default function ChatPanel({
                 {message.type === 'image' && message.fileUrl ? (
                   <div>
                     <Image
-                      src={message.fileUrl}
+                      src={getImageUrl(message.fileUrl)}
                       alt="Shared image"
                       width={300}
                       height={300}
