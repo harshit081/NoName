@@ -200,6 +200,18 @@ export default function ChatApp({ user }: ChatAppProps) {
       ));
     });
 
+    // Listen for room creation events
+    newSocket.on('room-created', (room: Room) => {
+      console.log('Room created via socket:', room);
+      setRooms(prev => {
+        // Check if room already exists to avoid duplicates
+        if (prev.find(r => r.id === room.id)) {
+          return prev;
+        }
+        return [...prev, room];
+      });
+    });
+
     // Load rooms
     loadRooms();
 
@@ -278,6 +290,115 @@ export default function ChatApp({ user }: ChatAppProps) {
     }
   };
 
+  const handleCreateRoom = async (room: Room) => {
+    try {
+      // First, try to create the room via API
+      const response = await fetch(`${API_URL}api/rooms`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: room.name,
+          type: room.type,
+          participants: room.participants
+        }),
+      });
+
+      if (response.ok) {
+        const createdRoom = await response.json();
+        console.log('Room created via API:', createdRoom);
+        
+        // Add room to local state
+        setRooms(prev => [...prev, createdRoom]);
+        
+        // If socket is connected, emit create-room event for real-time updates
+        if (socket && socket.connected) {
+          socket.emit('create-room', createdRoom);
+        }
+        
+        // Automatically select the new room
+        handleRoomSelect(createdRoom);
+      } else {
+        console.error('Failed to create room via API');
+        // Fallback: just emit socket event
+        if (socket && socket.connected) {
+          socket.emit('create-room', room);
+        }
+      }
+    } catch (error) {
+      console.error('Error creating room:', error);
+      // Fallback: just emit socket event
+      if (socket && socket.connected) {
+        socket.emit('create-room', room);
+      }
+    }
+  };
+
+  const handleCreateDM = async (targetUser: string) => {
+    try {
+      // Generate DM room ID
+      const dmId = `dm-${[user.username, targetUser].sort().join('-')}`;
+      
+      // Check if DM room already exists
+      const existingDM = rooms.find(room => room.id === dmId);
+      if (existingDM) {
+        handleRoomSelect(existingDM);
+        return;
+      }
+
+      // Create DM via API
+      const response = await fetch(`${API_URL}api/rooms/dm`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          participants: [user.username, targetUser]
+        }),
+      });
+
+      if (response.ok) {
+        const dmRoom = await response.json();
+        console.log('DM created via API:', dmRoom);
+        
+        // Add DM room to local state
+        setRooms(prev => [...prev, dmRoom]);
+        
+        // If socket is connected, emit create-room event for real-time updates
+        if (socket && socket.connected) {
+          socket.emit('create-room', dmRoom);
+        }
+        
+        // Automatically select the new DM
+        handleRoomSelect(dmRoom);
+      } else {
+        console.error('Failed to create DM via API');
+        // Fallback: create local DM room
+        const dmRoom: Room = {
+          id: dmId,
+          name: targetUser,
+          type: 'private',
+          participants: [user.username, targetUser]
+        };
+        setRooms(prev => [...prev, dmRoom]);
+        handleRoomSelect(dmRoom);
+      }
+    } catch (error) {
+      console.error('Error creating DM:', error);
+      // Fallback: create local DM room
+      const dmId = `dm-${[user.username, targetUser].sort().join('-')}`;
+      const dmRoom: Room = {
+        id: dmId,
+        name: targetUser,
+        type: 'private',
+        participants: [user.username, targetUser]
+      };
+      setRooms(prev => [...prev, dmRoom]);
+      handleRoomSelect(dmRoom);
+    }
+  };
+
   const handleTyping = (isTyping: boolean) => {
     if (socket && currentRoom) {
       if (isTyping) {
@@ -324,7 +445,8 @@ export default function ChatApp({ user }: ChatAppProps) {
           currentRoom={currentRoom}
           onlineUsers={onlineUsers}
           onRoomSelect={handleRoomSelect}
-          onCreateRoom={(room: Room) => setRooms(prev => [...prev, room])}
+          onCreateRoom={handleCreateRoom}
+          onCreateDM={handleCreateDM}
           isMobile={isMobile}
           onClose={() => setShowSidebar(false)}
         />

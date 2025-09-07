@@ -23,6 +23,7 @@ interface SidebarProps {
   onlineUsers: User[];
   onRoomSelect: (room: Room) => void;
   onCreateRoom: (room: Room) => void;
+  onCreateDM: (targetUser: string) => void;
   isMobile: boolean;
   onClose: () => void;
 }
@@ -34,6 +35,7 @@ export default function Sidebar({
   onlineUsers,
   onRoomSelect,
   onCreateRoom,
+  onCreateDM,
   isMobile,
   onClose
 }: SidebarProps) {
@@ -200,14 +202,8 @@ export default function Sidebar({
                 <button
                   key={onlineUser.username}
                   onClick={() => {
-                    // Handle DM creation logic here
-                    const dmRoom: Room = {
-                      id: `dm-${user.username}-${onlineUser.username}`,
-                      name: onlineUser.username,
-                      type: 'private',
-                      participants: [user.username, onlineUser.username]
-                    };
-                    onRoomSelect(dmRoom);
+                    // Use the new DM creation handler
+                    onCreateDM(onlineUser.username);
                   }}
                   className="w-full text-left p-3 rounded-lg text-gray-300 hover:bg-gray-700 transition-colors"
                 >
