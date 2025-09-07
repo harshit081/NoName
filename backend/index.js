@@ -21,7 +21,6 @@ const io = socketIo(server, {
   cors: {
     origin: [
       "http://localhost:3000",
-      "https://lwhbxt59-3000.inc1.devtunnels.ms",
       process.env.FRONTEND_URL || 'http://localhost:3000'
     ],
     methods: ["GET", "POST"]
@@ -32,7 +31,6 @@ const io = socketIo(server, {
 app.use(cors({
   origin: [
     "http://localhost:3000", 
-    "https://lwhbxt59-3000.inc1.devtunnels.ms",
     process.env.FRONTEND_URL || 'http://localhost:3000'
   ]
 }));
