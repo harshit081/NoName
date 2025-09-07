@@ -172,7 +172,7 @@ export default function ChatPanel({
       <div key={message.id}>
         {showDate && (
           <div className="flex justify-center my-4">
-            <span className="bg-gray-700 text-gray-300 text-xs px-3 py-1 rounded-full">
+            <span className="bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs px-3 py-1 rounded-full transition-colors duration-200">
               {formatDate(message.timestamp)}
             </span>
           </div>
@@ -192,13 +192,13 @@ export default function ChatPanel({
             
             <div className={`${isOwnMessage ? 'mr-2' : 'ml-2'} ${!showAvatar && !isOwnMessage ? 'ml-10' : ''}`}>
               {!isOwnMessage && showAvatar && (
-                <p className="text-gray-400 text-sm mb-1">{message.sender}</p>
+                <p className="text-gray-600 dark:text-gray-400 text-sm mb-1">{message.sender}</p>
               )}
               
               <div className={`p-3 rounded-lg ${
                 isOwnMessage 
                   ? 'bg-blue-600 text-white' 
-                  : 'bg-gray-700 text-gray-100'
+                  : 'bg-gray-300 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
               }`}>
                 {message.type === 'image' && message.fileUrl ? (
                   <div>
@@ -228,7 +228,7 @@ export default function ChatPanel({
                 )}
               </div>
               
-              <div className={`flex items-center mt-1 text-xs text-gray-500 ${
+              <div className={`flex items-center mt-1 text-xs text-gray-500 dark:text-gray-500 ${
                 isOwnMessage ? 'justify-end' : 'justify-start'
               }`}>
                 <span>{formatTime(message.timestamp)}</span>
@@ -246,12 +246,12 @@ export default function ChatPanel({
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="bg-gray-800 p-4 border-b border-gray-700">
+      <div className="bg-gray-200 dark:bg-gray-800 p-4 border-b border-gray-300 dark:border-gray-700 transition-colors duration-200">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center">
+            <div className="w-10 h-10 bg-gray-400 dark:bg-gray-600 rounded-full flex items-center justify-center transition-colors duration-200">
               {room.type === 'public' ? (
-                <span className="text-white font-medium">#</span>
+                <span className="text-gray-900 dark:text-white font-medium">#</span>
               ) : (
                 <Image
                   src={`https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face`}
@@ -263,33 +263,33 @@ export default function ChatPanel({
               )}
             </div>
             <div>
-              <h2 className="text-white font-medium text-lg">{room.name}</h2>
-              <p className="text-gray-400 text-sm">
+              <h2 className="text-gray-900 dark:text-white font-medium text-lg">{room.name}</h2>
+              <p className="text-gray-600 dark:text-gray-400 text-sm">
                 {room.type === 'public' ? 'Public room' : 'Private conversation'}
               </p>
             </div>
           </div>
           
-          <button className="p-2 text-gray-400 hover:text-white transition-colors">
+          <button className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
             <MoreVertical className="w-5 h-5" />
           </button>
         </div>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 bg-gray-900">
+      <div className="flex-1 overflow-y-auto p-4 bg-white dark:bg-gray-900 transition-colors duration-200">
         <div className="space-y-1">
           {messages.map((message, index) => renderMessage(message, index))}
           
           {typingUsers.length > 0 && (
             <div className="flex justify-start">
-              <div className="bg-gray-700 p-3 rounded-lg max-w-xs">
+              <div className="bg-gray-300 dark:bg-gray-700 p-3 rounded-lg max-w-xs transition-colors duration-200">
                 <div className="flex space-x-1">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                  <div className="w-2 h-2 bg-gray-600 dark:bg-gray-400 rounded-full animate-bounce"></div>
+                  <div className="w-2 h-2 bg-gray-600 dark:bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                  <div className="w-2 h-2 bg-gray-600 dark:bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                 </div>
-                <p className="text-gray-400 text-xs mt-1">
+                <p className="text-gray-600 dark:text-gray-400 text-xs mt-1 transition-colors duration-200">
                   {typingUsers.join(', ')} {typingUsers.length === 1 ? 'is' : 'are'} typing...
                 </p>
               </div>
@@ -301,12 +301,12 @@ export default function ChatPanel({
       </div>
 
       {/* Message Input */}
-      <div className="bg-gray-800 p-4 border-t border-gray-700">
+      <div className="bg-gray-100 dark:bg-gray-800 p-4 border-t border-gray-300 dark:border-gray-700 transition-colors duration-200">
         <form onSubmit={handleSendMessage} className="flex items-center space-x-3">
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="p-2 text-gray-400 hover:text-white transition-colors"
+            className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
           >
             <Paperclip className="w-5 h-5" />
           </button>
@@ -325,12 +325,12 @@ export default function ChatPanel({
               value={messageInput}
               onChange={handleInputChange}
               placeholder={`Message ${room.name}`}
-              className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
               maxLength={1000}
             />
             <button
               type="button"
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 text-gray-400 hover:text-white transition-colors"
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white transition-colors"
             >
               <Smile className="w-5 h-5" />
             </button>

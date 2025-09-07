@@ -425,7 +425,7 @@ export default function ChatApp({ user, token, onLogout }: ChatAppProps) {
   };
 
   return (
-    <div className="flex h-screen bg-gray-900">
+    <div className="flex h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
       {/* Mobile Header */}
       {isMobile && (
         <MobileHeader
@@ -477,10 +477,10 @@ export default function ChatApp({ user, token, onLogout }: ChatAppProps) {
             socket={socket}
           />
         ) : (
-          <div className="flex-1 flex items-center justify-center bg-gray-900">
+          <div className="flex-1 flex items-center justify-center bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
             <div className="text-center">
-              <h2 className="text-2xl font-bold text-white mb-4">Welcome to Katlio</h2>
-              <p className="text-gray-400">Select a room to start chatting</p>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Welcome to Katlio</h2>
+              <p className="text-gray-600 dark:text-gray-400">Select a room to start chatting</p>
             </div>
           </div>
         )}

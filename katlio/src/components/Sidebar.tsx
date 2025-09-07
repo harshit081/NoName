@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { Hash, Plus, X, Moon, Sun, Settings } from './Icons';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface User {
   id: string;
@@ -47,7 +48,7 @@ export default function Sidebar({
   isMobile,
   onClose
 }: SidebarProps) {
-  const [isDarkMode, setIsDarkMode] = useState(true);
+  const { theme, toggleTheme } = useTheme();
   const [showCreateRoom, setShowCreateRoom] = useState(false);
   const [newRoomName, setNewRoomName] = useState('');
 
@@ -66,22 +67,17 @@ export default function Sidebar({
     }
   };
 
-  const toggleDarkMode = () => {
-    setIsDarkMode(!isDarkMode);
-    document.documentElement.classList.toggle('dark');
-  };
-
   return (
-    <div className="h-full flex flex-col bg-gray-800">
+    <div className="h-full flex flex-col bg-gray-100 dark:bg-gray-800 transition-colors duration-200">
       {/* Header */}
-      <div className="p-4 border-b border-gray-700">
+      <div className="p-4 border-b border-gray-300 dark:border-gray-700">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-lg">K</span>
             </div>
             <div>
-              <h1 className="text-white font-bold text-lg">Katlio</h1>
+              <h1 className="text-gray-900 dark:text-white font-bold text-lg">Katlio</h1>
               <p className="text-gray-400 text-sm">{onlineUsers.length} online</p>
             </div>
           </div>
@@ -98,7 +94,7 @@ export default function Sidebar({
       </div>
 
       {/* User Profile */}
-      <div className="p-4 border-b border-gray-700">
+      <div className="p-4 border-b border-gray-300 dark:border-gray-700">
         <div className="flex items-center space-x-3">
           <Image
             src={user.avatar || `https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face`}
@@ -108,22 +104,22 @@ export default function Sidebar({
             className="w-10 h-10 rounded-full object-cover"
           />
           <div className="flex-1">
-            <p className="text-white font-medium">{user.username}</p>
-            <p className="text-green-400 text-sm flex items-center">
+            <p className="text-gray-900 dark:text-white font-medium">{user.username}</p>
+            <p className="text-green-500 dark:text-green-400 text-sm flex items-center">
               <span className="w-2 h-2 bg-green-400 rounded-full mr-2"></span>
               Online {user.isGuest && '(Guest)'}
             </p>
           </div>
           <div className="flex space-x-1">
             <button
-              onClick={toggleDarkMode}
-              className="p-2 text-gray-400 hover:text-white transition-colors"
+              onClick={toggleTheme}
+              className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white transition-colors"
               title="Toggle theme"
             >
-              {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
             <button 
-              className="p-2 text-gray-400 hover:text-white transition-colors"
+              className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white transition-colors"
               title="Settings"
             >
               <Settings className="w-4 h-4" />
