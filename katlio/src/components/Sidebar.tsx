@@ -4,8 +4,11 @@ import { useState } from 'react';
 import { Hash, Plus, X, Moon, Sun, Settings } from './Icons';
 
 interface User {
+  id: string;
   username: string;
+  email?: string;
   avatar: string;
+  isGuest: boolean;
 }
 
 interface Room {
@@ -24,6 +27,7 @@ interface SidebarProps {
   onRoomSelect: (room: Room) => void;
   onCreateRoom: (room: Room) => void;
   onCreateDM: (targetUser: string) => void;
+  onLogout: () => void;
   isMobile: boolean;
   onClose: () => void;
 }
@@ -36,6 +40,7 @@ export default function Sidebar({
   onRoomSelect,
   onCreateRoom,
   onCreateDM,
+  onLogout,
   isMobile,
   onClose
 }: SidebarProps) {
@@ -101,21 +106,43 @@ export default function Sidebar({
             <p className="text-white font-medium">{user.username}</p>
             <p className="text-green-400 text-sm flex items-center">
               <span className="w-2 h-2 bg-green-400 rounded-full mr-2"></span>
-              Online
+              Online {user.isGuest && '(Guest)'}
             </p>
           </div>
           <div className="flex space-x-1">
             <button
               onClick={toggleDarkMode}
               className="p-2 text-gray-400 hover:text-white transition-colors"
+              title="Toggle theme"
             >
               {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
-            <button className="p-2 text-gray-400 hover:text-white transition-colors">
+            <button 
+              className="p-2 text-gray-400 hover:text-white transition-colors"
+              title="Settings"
+            >
               <Settings className="w-4 h-4" />
+            </button>
+            <button
+              onClick={onLogout}
+              className="p-2 text-red-400 hover:text-red-300 transition-colors"
+              title="Logout"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
             </button>
           </div>
         </div>
+        
+        {/* Guest Banner */}
+        {user.isGuest && (
+          <div className="mt-3 p-2 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+            <p className="text-yellow-400 text-xs">
+              💡 You're browsing as a guest. <span className="underline cursor-pointer">Create an account</span> to save your data!
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Rooms Section */}

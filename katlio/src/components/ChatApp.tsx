@@ -8,8 +8,11 @@ import MobileHeader from './MobileHeader';
 import { createDecipheriv } from 'crypto';
 
 interface User {
+  id: string;
   username: string;
+  email?: string;
   avatar: string;
+  isGuest: boolean;
 }
 
 interface Room {
@@ -33,10 +36,12 @@ interface Message {
 
 interface ChatAppProps {
   user: User;
+  token: string;
+  onLogout: () => void;
 }
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/';
 
-export default function ChatApp({ user }: ChatAppProps) {
+export default function ChatApp({ user, token, onLogout }: ChatAppProps) {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [currentRoom, setCurrentRoom] = useState<Room | null>(null);
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -438,6 +443,7 @@ export default function ChatApp({ user }: ChatAppProps) {
           onRoomSelect={handleRoomSelect}
           onCreateRoom={handleCreateRoom}
           onCreateDM={handleCreateDM}
+          onLogout={onLogout}
           isMobile={isMobile}
           onClose={() => setShowSidebar(false)}
         />

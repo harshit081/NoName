@@ -1,6 +1,11 @@
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
+  id: {
+    type: String,
+    required: true,
+    unique: true
+  },
   username: { 
     type: String, 
     required: true, 
@@ -9,9 +14,26 @@ const userSchema = new mongoose.Schema({
     minlength: 2,
     maxlength: 30
   },
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+    trim: true,
+    lowercase: true
+  },
+  password: {
+    type: String,
+    required: function() {
+      return !this.isGuest; // Password not required for guests
+    }
+  },
   avatar: { 
     type: String, 
     default: '' 
+  },
+  isGuest: {
+    type: Boolean,
+    default: false
   },
   isOnline: { 
     type: Boolean, 
@@ -27,7 +49,9 @@ const userSchema = new mongoose.Schema({
 
 // Index for better query performance
 userSchema.index({ username: 1 });
+userSchema.index({ email: 1 });
 userSchema.index({ isOnline: 1 });
+userSchema.index({ isGuest: 1 });
 
 const User = mongoose.model('User', userSchema);
 
