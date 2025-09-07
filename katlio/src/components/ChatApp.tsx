@@ -1,0 +1,364 @@
+'use client';
+
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { io, Socket } from 'socket.io-client';
+import Sidebar from './Sidebar';
+import ChatPanel from './ChatPanel';
+import MobileHeader from './MobileHeader';
+
+interface User {
+  username: string;
+  avatar: string;
+}
+
+interface Room {
+  id: string;
+  name: string;
+  type: 'public' | 'private' | 'group';
+  participants: string[];
+  unreadCount?: number;
+}
+
+interface Message {
+  id: string;
+  content: string;
+  sender: string;
+  roomId: string;
+  timestamp: Date;
+  type: 'text' | 'image' | 'file';
+  fileUrl?: string;
+  readBy: Array<{ user: string; timestamp: Date }>;
+}
+
+interface ChatAppProps {
+  user: User;
+}
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/';
+
+export default function ChatApp({ user }: ChatAppProps) {
+  const [socket, setSocket] = useState<Socket | null>(null);
+  const [currentRoom, setCurrentRoom] = useState<Room | null>(null);
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [allMessages, setAllMessages] = useState<Message[]>([]);
+  const [currentRoomMessages, setCurrentRoomMessages] = useState<Message[]>([]);
+  const [onlineUsers, setOnlineUsers] = useState<User[]>([]);
+  const [typingUsers, setTypingUsers] = useState<string[]>([]);
+  const [isMobile, setIsMobile] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(true);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const currentRoomRef = useRef<Room | null>(null);
+
+  // Update ref whenever currentRoom changes
+  useEffect(() => {
+    currentRoomRef.current = currentRoom;
+  }, [currentRoom]);
+  
+  
+  const loadRooms = useCallback(async () => {
+    try {
+      const response = await fetch(`${API_URL}api/rooms`);
+      const publicRooms = await response.json();
+      
+      // Add some default public rooms if none exist
+      const defaultRooms: Room[] = [
+        { id: 'general', name: 'General', type: 'public', participants: [] },
+        { id: 'random', name: 'Random', type: 'public', participants: [] },
+        { id: 'tech', name: 'Tech Talk', type: 'public', participants: [] },
+      ];
+      
+      const roomsToSet = publicRooms.length > 0 ? publicRooms : defaultRooms;
+      setRooms(roomsToSet);
+      console.log('Loaded rooms:', roomsToSet);
+    } catch (error) {
+      console.error('Error loading rooms:', error);
+      // Fallback to default rooms
+      const defaultRooms: Room[] = [
+        { id: 'general', name: 'General', type: 'public', participants: [] },
+        { id: 'random', name: 'Random', type: 'public', participants: [] },
+        { id: 'tech', name: 'Tech Talk', type: 'public', participants: [] },
+      ];
+      setRooms(defaultRooms);
+      console.log('Loaded fallback rooms:', defaultRooms);
+    }
+  }, []);
+
+  useEffect(() => {
+    // Check if mobile
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+      setShowSidebar(window.innerWidth >= 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  useEffect(() => {
+    // Initialize socket connection
+    console.log('Initializing socket connection...');
+    const newSocket = io(API_URL);
+    setSocket(newSocket);
+
+    // Join with user data
+    console.log('Emitting user-join with:', user);
+    newSocket.emit('user-join', user);
+
+    // Socket event listeners
+    newSocket.on('connect', () => {
+      console.log('Socket connected successfully');
+    });
+
+    newSocket.on('disconnect', () => {
+      console.log('Socket disconnected');
+    });
+
+    // Add a catch-all listener to debug all events
+    newSocket.onAny((eventName, ...args) => {
+      console.log('Received socket event:', eventName, args);
+    });
+
+    newSocket.on('online-users', (users: User[]) => {
+      console.log('Received online users:', users);
+      setOnlineUsers(users);
+    });
+
+    newSocket.on('user-online', (userData: User) => {
+      setOnlineUsers(prev => [...prev, userData]);
+    });
+
+    newSocket.on('user-offline', (username: string) => {
+      setOnlineUsers(prev => prev.filter(u => u.username !== username));
+    });
+
+    newSocket.on('room-messages', (roomMessages: Message[]) => {
+      console.log('Received room messages:', roomMessages);
+      console.log('Number of room messages received:', roomMessages.length);
+      setCurrentRoomMessages(roomMessages);
+      
+      // Also add to allMessages if they're not already there
+      setAllMessages(prev => {
+        const existingIds = new Set(prev.map(msg => msg.id));
+        const newMessages = roomMessages.filter(msg => !existingIds.has(msg.id));
+        return [...prev, ...newMessages];
+      });
+    });
+
+    newSocket.on('new-message', (message: Message) => {
+      console.log('Received new message:', message);
+      const currentRoomId = currentRoomRef.current?.id;
+      console.log('Current room ID (from ref):', currentRoomId);
+      console.log('Message room ID:', message.roomId);
+      console.log('Room match:', currentRoomId === message.roomId);
+      
+      setAllMessages(prev => [...prev, message]);
+      
+      // If it's for the current room, add to current room messages
+      if (currentRoomId === message.roomId) {
+        console.log('Adding message to current room messages');
+        setCurrentRoomMessages(prev => {
+          console.log('Previous current room messages:', prev.length);
+          const newMessages = [...prev, message];
+          console.log('New current room messages:', newMessages.length);
+          return newMessages;
+        });
+      } else {
+        console.log('Message not for current room, skipping');
+      }
+      
+      // Update unread count for rooms that aren't currently active
+      if (currentRoomId !== message.roomId) {
+        setRooms(prev => prev.map(room => 
+          room.id === message.roomId 
+            ? { ...room, unreadCount: (room.unreadCount || 0) + 1 }
+            : room
+        ));
+      }
+    });
+
+    newSocket.on('user-typing', ({ username, roomId }: { username: string; roomId: string }) => {
+      if (currentRoom?.id === roomId) {
+        setTypingUsers(prev => [...prev.filter(u => u !== username), username]);
+      }
+    });
+
+    newSocket.on('user-stopped-typing', ({ username, roomId }: { username: string; roomId: string }) => {
+      if (currentRoom?.id === roomId) {
+        setTypingUsers(prev => prev.filter(u => u !== username));
+      }
+    });
+
+    newSocket.on('message-read', ({ messageId, username }: { messageId: string; username: string }) => {
+      setCurrentRoomMessages(prev => prev.map(msg => 
+        msg.id === messageId 
+          ? { 
+              ...msg, 
+              readBy: [...msg.readBy.filter(r => r.user !== username), { user: username, timestamp: new Date() }]
+            }
+          : msg
+      ));
+    });
+
+    // Load rooms
+    loadRooms();
+
+    return () => {
+      newSocket.close();
+    };
+  }, [user.username, user.avatar]); // Only depend on user data, not currentRoom
+
+  // Auto-join first room when socket and rooms are ready
+  useEffect(() => {
+    if (socket && socket.connected && rooms.length > 0 && !currentRoom) {
+      const defaultRoom = rooms[0];
+      console.log('Auto-joining default room after socket ready:', defaultRoom.id);
+      setCurrentRoom(defaultRoom);
+      setCurrentRoomMessages([]);
+      
+      setTimeout(() => {
+        socket.emit('join-room', defaultRoom.id);
+      }, 200);
+    }
+  }, [socket?.connected, rooms.length, currentRoom]);
+
+  // Update current room messages when room changes
+  useEffect(() => {
+    if (currentRoom) {
+      const roomMessages = allMessages.filter(msg => msg.roomId === currentRoom.id);
+      console.log('Current room changed:', allMessages);
+      console.log(`Room changed to ${currentRoom.id}`);
+      console.log(`AllMessages count: ${allMessages.length}`);
+      console.log(`Filtered messages for room: ${roomMessages.length}`);
+      // Don't override if currentRoomMessages already has messages (from room-messages event)
+      if (currentRoomMessages.length === 0 && roomMessages.length > 0) {
+        setCurrentRoomMessages(roomMessages);
+        console.log(`Updated currentRoomMessages with ${roomMessages.length} messages from allMessages`);
+      }
+    }
+  }, [currentRoom?.id, allMessages, currentRoomMessages.length]);
+
+  const handleRoomSelect = (room: Room) => {
+    if (socket && socket.connected && room.id !== currentRoom?.id) {
+      console.log('Selecting room:', room);
+      console.log('Socket connected:', socket.connected);
+      setCurrentRoom(room);
+      setCurrentRoomMessages([]); // Clear current room messages, will be populated by room-messages event
+      
+      // Add a small delay to ensure socket is ready
+      setTimeout(() => {
+        console.log('Emitting join-room for:', room.id);
+        socket.emit('join-room', room.id);
+      }, 100);
+      
+      // Clear unread count
+      setRooms(prev => prev.map(r => 
+        r.id === room.id ? { ...r, unreadCount: 0 } : r
+      ));
+      
+      // Hide sidebar on mobile
+      if (isMobile) {
+        setShowSidebar(false);
+      }
+    }
+  };
+
+  const handleSendMessage = (content: string, type: 'text' | 'image' | 'file' = 'text', fileUrl?: string) => {
+    if (socket && currentRoom && content.trim()) {
+      const messageData = {
+        content: content.trim(),
+        sender: user.username,
+        roomId: currentRoom.id,
+        type,
+        fileUrl
+      };
+      
+      console.log('Sending message:', messageData);
+      socket.emit('send-message', messageData);
+    }
+  };
+
+  const handleTyping = (isTyping: boolean) => {
+    if (socket && currentRoom) {
+      if (isTyping) {
+        socket.emit('typing-start', { username: user.username, roomId: currentRoom.id });
+        
+        // Clear existing timeout
+        if (typingTimeoutRef.current) {
+          clearTimeout(typingTimeoutRef.current);
+        }
+        
+        // Set timeout to stop typing after 3 seconds
+        typingTimeoutRef.current = setTimeout(() => {
+          socket.emit('typing-stop', { username: user.username, roomId: currentRoom.id });
+        }, 3000);
+      } else {
+        socket.emit('typing-stop', { username: user.username, roomId: currentRoom.id });
+        if (typingTimeoutRef.current) {
+          clearTimeout(typingTimeoutRef.current);
+        }
+      }
+    }
+  };
+
+  return (
+    <div className="flex h-screen bg-gray-900">
+      {/* Mobile Header */}
+      {isMobile && (
+        <MobileHeader
+          currentRoom={currentRoom}
+          onMenuClick={() => setShowSidebar(!showSidebar)}
+          onlineCount={onlineUsers.length}
+        />
+      )}
+      
+      {/* Sidebar */}
+      <div className={`${
+        isMobile 
+          ? `fixed inset-y-0 left-0 z-50 transform ${showSidebar ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out`
+          : 'relative'
+      } ${isMobile ? 'w-full' : 'w-80'} bg-gray-800 border-r border-gray-700`}>
+        <Sidebar
+          user={user}
+          rooms={rooms}
+          currentRoom={currentRoom}
+          onlineUsers={onlineUsers}
+          onRoomSelect={handleRoomSelect}
+          onCreateRoom={(room: Room) => setRooms(prev => [...prev, room])}
+          isMobile={isMobile}
+          onClose={() => setShowSidebar(false)}
+        />
+      </div>
+
+      {/* Overlay for mobile */}
+      {isMobile && showSidebar && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-40"
+          onClick={() => setShowSidebar(false)}
+        />
+      )}
+      
+      {/* Chat Panel */}
+      <div className={`flex-1 flex flex-col ${isMobile ? 'mt-16' : ''}`}>
+        {currentRoom ? (
+          <ChatPanel
+            room={currentRoom}
+            messages={currentRoomMessages}
+            user={user}
+            typingUsers={typingUsers}
+            onSendMessage={handleSendMessage}
+            onTyping={handleTyping}
+            socket={socket}
+          />
+        ) : (
+          <div className="flex-1 flex items-center justify-center bg-gray-900">
+            <div className="text-center">
+              <h2 className="text-2xl font-bold text-white mb-4">Welcome to Katlio</h2>
+              <p className="text-gray-400">Select a room to start chatting</p>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
