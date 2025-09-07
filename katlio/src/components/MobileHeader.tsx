@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { Menu, Users } from './Icons';
 
 interface Room {
@@ -37,9 +38,11 @@ export default function MobileHeader({
                 {currentRoom.type === 'public' ? (
                   <span className="text-white font-medium text-sm">#</span>
                 ) : (
-                  <img
+                  <Image
                     src={`https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face`}
                     alt={currentRoom.name}
+                    width={32}
+                    height={32}
                     className="w-full h-full rounded-full object-cover"
                   />
                 )}

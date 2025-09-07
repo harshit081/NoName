@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import Image from 'next/image';
 import { Send, Paperclip, Smile, MoreVertical } from './Icons';
 import { Socket } from 'socket.io-client';
 
@@ -43,8 +44,7 @@ export default function ChatPanel({
   user,
   typingUsers,
   onSendMessage,
-  onTyping,
-  socket: _socket
+  onTyping
 }: ChatPanelProps) {
   const [messageInput, setMessageInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -168,9 +168,11 @@ export default function ChatPanel({
         <div className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} mb-2`}>
           <div className={`flex max-w-xs lg:max-w-md ${isOwnMessage ? 'flex-row-reverse' : 'flex-row'}`}>
             {!isOwnMessage && showAvatar && (
-              <img
+              <Image
                 src={`https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face`}
                 alt={message.sender}
+                width={32}
+                height={32}
                 className="w-8 h-8 rounded-full object-cover mt-1"
               />
             )}
@@ -187,9 +189,11 @@ export default function ChatPanel({
               }`}>
                 {message.type === 'image' && message.fileUrl ? (
                   <div>
-                    <img
+                    <Image
                       src={message.fileUrl}
                       alt="Shared image"
+                      width={300}
+                      height={300}
                       className="max-w-full h-auto rounded mb-2"
                       style={{ maxHeight: '300px' }}
                     />
@@ -236,9 +240,11 @@ export default function ChatPanel({
               {room.type === 'public' ? (
                 <span className="text-white font-medium">#</span>
               ) : (
-                <img
+                <Image
                   src={`https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face`}
                   alt={room.name}
+                  width={40}
+                  height={40}
                   className="w-full h-full rounded-full object-cover"
                 />
               )}

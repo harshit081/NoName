@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { Hash, Plus, X, Moon, Sun, Settings } from './Icons';
 
 interface User {
@@ -28,6 +29,7 @@ interface SidebarProps {
   onCreateRoom: (room: Room) => void;
   onCreateDM: (targetUser: string) => void;
   onLogout: () => void;
+  onShowGuestConversion?: () => void;
   isMobile: boolean;
   onClose: () => void;
 }
@@ -41,6 +43,7 @@ export default function Sidebar({
   onCreateRoom,
   onCreateDM,
   onLogout,
+  onShowGuestConversion,
   isMobile,
   onClose
 }: SidebarProps) {
@@ -97,9 +100,11 @@ export default function Sidebar({
       {/* User Profile */}
       <div className="p-4 border-b border-gray-700">
         <div className="flex items-center space-x-3">
-          <img
+          <Image
             src={user.avatar || `https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face`}
             alt={user.username}
+            width={40}
+            height={40}
             className="w-10 h-10 rounded-full object-cover"
           />
           <div className="flex-1">
@@ -137,9 +142,10 @@ export default function Sidebar({
         
         {/* Guest Banner */}
         {user.isGuest && (
-          <div className="mt-3 p-2 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+          <div className="mt-3 p-2 bg-yellow-500/10 border border-yellow-500/20 rounded-lg cursor-pointer hover:bg-yellow-500/20 transition-colors"
+               onClick={onShowGuestConversion}>
             <p className="text-yellow-400 text-xs">
-              💡 You're browsing as a guest. <span className="underline cursor-pointer">Create an account</span> to save your data!
+              💡 You&apos;re browsing as a guest. <span className="underline">Create an account</span> to save your data!
             </p>
           </div>
         )}
@@ -236,9 +242,11 @@ export default function Sidebar({
                 >
                   <div className="flex items-center space-x-3">
                     <div className="relative">
-                      <img
+                      <Image
                         src={onlineUser.avatar || `https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face`}
                         alt={onlineUser.username}
+                        width={32}
+                        height={32}
                         className="w-8 h-8 rounded-full object-cover"
                       />
                       <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-400 border-2 border-gray-800 rounded-full"></div>

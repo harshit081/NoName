@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { User, Camera } from './Icons';
 
 interface User {
@@ -59,9 +60,11 @@ export default function UserSetup({ onUserSetup }: UserSetupProps) {
             <div className="flex flex-col items-center space-y-4">
               <div className="relative">
                 {avatar ? (
-                  <img
+                  <Image
                     src={avatar}
                     alt="Avatar preview"
+                    width={96}
+                    height={96}
                     className="w-24 h-24 rounded-full object-cover border-4 border-blue-500"
                   />
                 ) : (

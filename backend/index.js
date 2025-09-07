@@ -9,6 +9,7 @@ const path = require('path');
 // Import configurations and modules
 const connectDatabase = require('./src/config/database');
 const { handleSocketConnection } = require('./src/socket/socketHandlers');
+const { startGuestCleanup } = require('./src/utils/guestCleanup');
 const apiRoutes = require('./src/routes');
 
 // Initialize Express app
@@ -86,6 +87,9 @@ const startServer = async () => {
   try {
     // Connect to MongoDB
     await connectDatabase();
+    
+    // Start guest cleanup scheduler
+    startGuestCleanup();
     
     // Start server
     server.listen(PORT, () => {

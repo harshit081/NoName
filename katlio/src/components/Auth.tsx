@@ -3,16 +3,16 @@
 import { useState } from 'react';
 import { User, Lock, Mail, UserPlus } from './Icons';
 
-interface AuthProps {
-  onAuth: (user: any, token: string) => void;
-}
-
 interface AuthUser {
   id: string;
   username: string;
   email?: string;
   avatar: string;
   isGuest: boolean;
+}
+
+interface AuthProps {
+  onAuth: (user: AuthUser, token: string) => void;
 }
 
 export default function Auth({ onAuth }: AuthProps) {
@@ -65,7 +65,7 @@ export default function Auth({ onAuth }: AuthProps) {
       } else {
         setError(data.error || 'Failed to create guest account');
       }
-    } catch (error) {
+    } catch {
       setError('Network error. Please try again.');
     } finally {
       setLoading(false);
@@ -102,7 +102,7 @@ export default function Auth({ onAuth }: AuthProps) {
       } else {
         setError(data.error || 'Login failed');
       }
-    } catch (error) {
+    } catch {
       setError('Network error. Please try again.');
     } finally {
       setLoading(false);
@@ -150,7 +150,7 @@ export default function Auth({ onAuth }: AuthProps) {
       } else {
         setError(data.error || 'Registration failed');
       }
-    } catch (error) {
+    } catch {
       setError('Network error. Please try again.');
     } finally {
       setLoading(false);
@@ -335,7 +335,7 @@ export default function Auth({ onAuth }: AuthProps) {
         {mode === 'guest' && (
           <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
             <p className="text-blue-400 text-sm">
-              💡 As a guest, your data won't be saved permanently. Create an account for full features!
+              💡 As a guest, your data won&apos;t be saved permanently. Create an account for full features!
             </p>
           </div>
         )}

@@ -14,6 +14,16 @@ const userSchema = new mongoose.Schema({
     minlength: 2,
     maxlength: 30
   },
+  displayName: {
+    type: String,
+    trim: true,
+    maxlength: 30
+  },
+  originalUsername: {
+    type: String,
+    trim: true,
+    maxlength: 30
+  },
   email: {
     type: String,
     required: true,
@@ -35,6 +45,12 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  guestExpiry: {
+    type: Date,
+    required: function() {
+      return this.isGuest; // Expiry required for guests
+    }
+  },
   isOnline: { 
     type: Boolean, 
     default: true 
@@ -52,6 +68,7 @@ userSchema.index({ username: 1 });
 userSchema.index({ email: 1 });
 userSchema.index({ isOnline: 1 });
 userSchema.index({ isGuest: 1 });
+userSchema.index({ guestExpiry: 1 });
 
 const User = mongoose.model('User', userSchema);
 

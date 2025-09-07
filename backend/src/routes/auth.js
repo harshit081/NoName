@@ -138,22 +138,22 @@ router.post('/guest', async (req, res) => {
       });
     }
     
-    // Check if username is already taken (including guests)
-    const existingUser = await User.findOne({ username });
-    if (existingUser) {
-      return res.status(409).json({ 
-        error: 'Username already exists. Please choose a different name.' 
-      });
-    }
+    // For guests, we'll use a temporary username format to avoid conflicts
+    // Format: originalUsername_guest_randomId
+    const guestId = uuidv4().split('-')[0]; // Use first part of UUID for shorter ID
+    const tempUsername = `${username}_guest_${guestId}`;
     
-    // Create guest user
+    // Create guest user with temporary username
     const guestUser = new User({
       id: uuidv4(),
-      username,
-      email: `guest-${uuidv4()}@katlio.local`, // Temporary email for guests
+      username: tempUsername,
+      displayName: username, // Store the original display name
+      email: `guest-${guestId}@katlio.temp`, // Temporary email for guests
       avatar: `https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face`,
       isGuest: true,
-      isOnline: true
+      isOnline: true,
+      guestExpiry: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours from now
+      originalUsername: username // Store original username for conversion
     });
     
     await guestUser.save();
@@ -169,7 +169,7 @@ router.post('/guest', async (req, res) => {
       message: 'Guest user created successfully',
       user: {
         id: guestUser.id,
-        username: guestUser.username,
+        username: guestUser.displayName || guestUser.username, // Return display name
         avatar: guestUser.avatar,
         isGuest: true
       },
@@ -178,6 +178,107 @@ router.post('/guest', async (req, res) => {
   } catch (error) {
     console.error('Guest creation error:', error);
     res.status(500).json({ error: 'Failed to create guest user' });
+  }
+});
+
+// Convert guest to registered user
+router.post('/convert-guest', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    
+    if (!token) {
+      return res.status(401).json({ error: 'No token provided' });
+    }
+    
+    if (!email || !password) {
+      return res.status(400).json({ 
+        error: 'Email and password are required for conversion' 
+      });
+    }
+    
+    // Verify token and get guest user
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'katlio-secret-key');
+    const guestUser = await User.findOne({ id: decoded.userId });
+    
+    if (!guestUser || !guestUser.isGuest) {
+      return res.status(401).json({ error: 'Invalid guest user' });
+    }
+    
+    // Check if desired username is available (check against non-guest users)
+    const desiredUsername = guestUser.originalUsername || guestUser.displayName;
+    const existingUser = await User.findOne({
+      $and: [
+        { $or: [{ username: desiredUsername }, { email }] },
+        { isGuest: false }
+      ]
+    });
+    
+    if (existingUser) {
+      return res.status(409).json({ 
+        error: existingUser.username === desiredUsername 
+          ? 'Username already taken by another user' 
+          : 'Email already exists'
+      });
+    }
+    
+    // Hash password
+    const saltRounds = 12;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    
+    // Convert guest to regular user
+    guestUser.username = desiredUsername;
+    guestUser.email = email;
+    guestUser.password = hashedPassword;
+    guestUser.isGuest = false;
+    guestUser.guestExpiry = undefined;
+    guestUser.originalUsername = undefined;
+    guestUser.displayName = undefined;
+    
+    await guestUser.save();
+    
+    // Generate new JWT token
+    const newToken = jwt.sign(
+      { userId: guestUser.id, username: guestUser.username, isGuest: false },
+      process.env.JWT_SECRET || 'katlio-secret-key',
+      { expiresIn: '7d' }
+    );
+    
+    res.json({
+      message: 'Guest account converted successfully',
+      user: {
+        id: guestUser.id,
+        username: guestUser.username,
+        email: guestUser.email,
+        avatar: guestUser.avatar,
+        isGuest: false
+      },
+      token: newToken
+    });
+  } catch (error) {
+    console.error('Guest conversion error:', error);
+    res.status(500).json({ error: 'Failed to convert guest account' });
+  }
+});
+
+// Check username availability (for non-guest users)
+router.get('/check-username/:username', async (req, res) => {
+  try {
+    const { username } = req.params;
+    
+    // Only check against non-guest users
+    const existingUser = await User.findOne({ 
+      username, 
+      isGuest: false 
+    });
+    
+    res.json({ 
+      available: !existingUser,
+      message: existingUser ? 'Username already taken' : 'Username available'
+    });
+  } catch (error) {
+    console.error('Username check error:', error);
+    res.status(500).json({ error: 'Failed to check username' });
   }
 });
 

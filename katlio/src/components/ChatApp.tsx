@@ -5,7 +5,7 @@ import { io, Socket } from 'socket.io-client';
 import Sidebar from './Sidebar';
 import ChatPanel from './ChatPanel';
 import MobileHeader from './MobileHeader';
-import { createDecipheriv } from 'crypto';
+import GuestConversion from './GuestConversion';
 
 interface User {
   id: string;
@@ -51,6 +51,7 @@ export default function ChatApp({ user, token, onLogout }: ChatAppProps) {
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
   const [isMobile, setIsMobile] = useState(false);
   const [showSidebar, setShowSidebar] = useState(true);
+  const [showGuestConversion, setShowGuestConversion] = useState(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const currentRoomRef = useRef<Room | null>(null);
 
@@ -213,7 +214,7 @@ export default function ChatApp({ user, token, onLogout }: ChatAppProps) {
     return () => {
       newSocket.close();
     };
-  }, [user.username, user.avatar]); // Only depend on user data, not currentRoom
+  }, [user.username, user.avatar, loadRooms]); // Include loadRooms dependency
 
   // Auto-join first room when socket and rooms are ready
   useEffect(() => {
@@ -227,7 +228,7 @@ export default function ChatApp({ user, token, onLogout }: ChatAppProps) {
         socket.emit('join-room', defaultRoom.id);
       }, 200);
     }
-  }, [socket?.connected, rooms.length, currentRoom]);
+  }, [socket?.connected, rooms, currentRoom?.id, socket, user]);
 
   // Update current room messages when room changes
   useEffect(() => {
@@ -243,7 +244,7 @@ export default function ChatApp({ user, token, onLogout }: ChatAppProps) {
         console.log(`Updated currentRoomMessages with ${roomMessages.length} messages from allMessages`);
       }
     }
-  }, [currentRoom?.id, allMessages, currentRoomMessages.length]);
+  }, [currentRoom, allMessages, currentRoomMessages.length]);
 
   const handleRoomSelect = (room: Room) => {
     if (socket && socket.connected && room.id !== currentRoom?.id) {
@@ -395,6 +396,11 @@ export default function ChatApp({ user, token, onLogout }: ChatAppProps) {
     }
   };
 
+  const handleGuestConversionSuccess = () => {
+    // Update user in parent component
+    window.location.reload(); // Simple approach - reload to update everything
+  };
+
   const handleTyping = (isTyping: boolean) => {
     if (socket && currentRoom) {
       if (isTyping) {
@@ -444,6 +450,7 @@ export default function ChatApp({ user, token, onLogout }: ChatAppProps) {
           onCreateRoom={handleCreateRoom}
           onCreateDM={handleCreateDM}
           onLogout={onLogout}
+          onShowGuestConversion={() => setShowGuestConversion(true)}
           isMobile={isMobile}
           onClose={() => setShowSidebar(false)}
         />
@@ -478,6 +485,16 @@ export default function ChatApp({ user, token, onLogout }: ChatAppProps) {
           </div>
         )}
       </div>
+      
+      {/* Guest Conversion Modal */}
+      {showGuestConversion && user.isGuest && (
+        <GuestConversion
+          user={user}
+          token={token}
+          onConversionSuccess={handleGuestConversionSuccess}
+          onClose={() => setShowGuestConversion(false)}
+        />
+      )}
     </div>
   );
 }

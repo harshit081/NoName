@@ -19,20 +19,7 @@ export default function Home() {
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/';
 
-  useEffect(() => {
-    // Check if user data and token exist in localStorage
-    const savedUser = localStorage.getItem('katlio_user');
-    const savedToken = localStorage.getItem('katlio_token');
-
-    if (savedUser && savedToken) {
-      // Verify token with backend
-      verifyToken(savedToken, JSON.parse(savedUser));
-    } else {
-      setLoading(false);
-    }
-  }, []);
-
-  const verifyToken = async (tokenToVerify: string, userData: User) => {
+  const verifyToken = async (tokenToVerify: string) => {
     try {
       const response = await fetch(`${API_URL}api/auth/verify`, {
         headers: {
@@ -57,6 +44,19 @@ export default function Home() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    // Check if user data and token exist in localStorage
+    const savedUser = localStorage.getItem('katlio_user');
+    const savedToken = localStorage.getItem('katlio_token');
+
+    if (savedUser && savedToken) {
+      // Verify token with backend
+      verifyToken(savedToken);
+    } else {
+      setLoading(false);
+    }
+  }, []);
 
   const handleAuth = (userData: User, userToken: string) => {
     setUser(userData);
