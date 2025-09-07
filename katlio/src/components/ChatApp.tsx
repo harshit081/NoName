@@ -5,6 +5,7 @@ import { io, Socket } from 'socket.io-client';
 import Sidebar from './Sidebar';
 import ChatPanel from './ChatPanel';
 import MobileHeader from './MobileHeader';
+import { createDecipheriv } from 'crypto';
 
 interface User {
   username: string;
@@ -57,28 +58,17 @@ export default function ChatApp({ user }: ChatAppProps) {
   const loadRooms = useCallback(async () => {
     try {
       const response = await fetch(`${API_URL}api/rooms`);
-      const publicRooms = await response.json();
-      
-      // Add some default public rooms if none exist
-      const defaultRooms: Room[] = [
-        { id: 'general', name: 'General', type: 'public', participants: [] },
-        { id: 'random', name: 'Random', type: 'public', participants: [] },
-        { id: 'tech', name: 'Tech Talk', type: 'public', participants: [] },
-      ];
-      
-      const roomsToSet = publicRooms.length > 0 ? publicRooms : defaultRooms;
-      setRooms(roomsToSet);
-      console.log('Loaded rooms:', roomsToSet);
+      if (response.ok) {
+        const publicRooms = await response.json();
+        setRooms(publicRooms);
+        console.log('Loaded rooms:', publicRooms);
+      } else {
+        console.error('Failed to fetch rooms');
+        setRooms([]);
+      }
     } catch (error) {
       console.error('Error loading rooms:', error);
-      // Fallback to default rooms
-      const defaultRooms: Room[] = [
-        { id: 'general', name: 'General', type: 'public', participants: [] },
-        { id: 'random', name: 'Random', type: 'public', participants: [] },
-        { id: 'tech', name: 'Tech Talk', type: 'public', participants: [] },
-      ];
-      setRooms(defaultRooms);
-      console.log('Loaded fallback rooms:', defaultRooms);
+      setRooms([]);
     }
   }, []);
 
@@ -301,7 +291,8 @@ export default function ChatApp({ user }: ChatAppProps) {
         body: JSON.stringify({
           name: room.name,
           type: room.type,
-          participants: room.participants
+          participants: room.participants,
+          createdBy: user.username
         }),
       });
 
