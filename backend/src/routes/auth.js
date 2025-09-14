@@ -131,7 +131,7 @@ router.post('/login', async (req, res) => {
 router.post('/guest', async (req, res) => {
   try {
     const { username } = req.body;
-    
+    console.error("username",username)
     if (!username) {
       return res.status(400).json({ 
         error: 'Username is required for guest access' 
@@ -155,9 +155,10 @@ router.post('/guest', async (req, res) => {
       guestExpiry: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours from now
       originalUsername: username // Store original username for conversion
     });
-    
+    console.log(guestUser)
+    console.error("No error")
     await guestUser.save();
-    
+    console.error("Saved")
     // Generate JWT token for guest
     const token = jwt.sign(
       { userId: guestUser.id, username: guestUser.username, isGuest: true },

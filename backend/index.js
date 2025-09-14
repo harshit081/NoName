@@ -26,7 +26,7 @@ const io = socketIo(server, {
     methods: ["GET", "POST"]
   }
 });
-
+// console.log(process.env.FRONTEND_URL,"here")
 // Middleware
 app.use(cors({
   origin: [
