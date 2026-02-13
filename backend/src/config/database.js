@@ -1,14 +1,40 @@
 const mongoose = require('mongoose');
+const dns = require('dns');
+
+let isConnected = false;
 
 const connectDatabase = async () => {
+  if (isConnected) {
+    console.log('=> Using existing database connection');
+    return mongoose.connection;
+  }
+
+  const customDnsServers = process.env.MONGODB_DNS_SERVERS
+    ? process.env.MONGODB_DNS_SERVERS.split(',').map((server) => server.trim()).filter(Boolean)
+    : [];
+
+  if (customDnsServers.length > 0) {
+    dns.setServers(customDnsServers);
+    console.log(`=> Using custom DNS servers for MongoDB: ${customDnsServers.join(', ')}`);
+  }
+
   try {
     const connection = await mongoose.connect(
-      process.env.MONGODB_URI || 'mongodb://localhost:27017/katlio'
+      process.env.MONGODB_URI || 'mongodb://localhost:27017/katlio', {
+        bufferCommands: false,
+        maxPoolSize: 10,
+        serverSelectionTimeoutMS: 30000,
+        socketTimeoutMS: 45000,
+        family: 4
+      }
     );
 
-    console.log(`MongoDB connected: ${connection.connection.host}`)
+    isConnected = connection.connection.readyState === 1;
+    console.log(`MongoDB connected: ${connection.connection.host}`);
     // Create default rooms if none exist
     await createDefaultRooms();
+
+    return connection.connection;
   } catch (error) {
     console.error('Database connection error:', error);
     process.exit(1);
