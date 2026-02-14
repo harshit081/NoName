@@ -46,7 +46,12 @@ router.post('/register', async (req, res) => {
       isOnline: true
     });
     
-    await user.save();
+    try {
+      await user.save();
+    } catch (saveError) {
+      console.error('User save error:', saveError);
+      return res.status(500).json({ error: 'Failed to save user' });
+    }
     
     // Generate JWT token
     const token = jwt.sign(
