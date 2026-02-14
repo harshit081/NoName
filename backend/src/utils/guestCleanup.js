@@ -16,7 +16,7 @@ const cleanupExpiredGuests = async () => {
     console.error('❌ Error cleaning up expired guests:', error);
   }
 };
-
+ 
 // Schedule cleanup every hour
 const startGuestCleanup = () => {
   // Run immediately on startup
